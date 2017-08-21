@@ -1,0 +1,173 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <script src="https://code.angularjs.org/angular-1.0.1.js"></script>
+    <script>
+        var myApp = angular.module('myApp', [])
+            .directive("ngTouchstart", function () {
+                return {
+                    controller: ["$scope", "$element", function ($scope, $element) {
+
+                        $element.bind("touchstart", onTouchStart);
+                        function onTouchStart(event) {
+                            var method = $element.attr("ng-touchstart");
+                            $scope.$event = event;
+                            $scope.$apply(method);
+                        }
+
+                    }]
+                }
+            })
+            .directive("ngTouchmove", function () {
+                return {
+                    controller: ["$scope", "$element", function ($scope, $element) {
+
+                        $element.bind("touchstart", onTouchStart);
+                        function onTouchStart(event) {
+                            event.preventDefault();
+                            $element.bind("touchmove", onTouchMove);
+                            $element.bind("touchend", onTouchEnd);
+                        }
+                        function onTouchMove(event) {
+                            var method = $element.attr("ng-touchmove");
+                            $scope.$event = event;
+                            $scope.$apply(method);
+                        }
+                        function onTouchEnd(event) {
+                            event.preventDefault();
+                            $element.unbind("touchmove", onTouchMove);
+                            $element.unbind("touchend", onTouchEnd);
+                        }
+
+                    }]
+                }
+            })
+            .directive("ngTouchend", function () {
+                return {
+                    controller: ["$scope", "$element", function ($scope, $element) {
+
+                        $element.bind("touchend", onTouchEnd);
+                        function onTouchEnd(event) {
+                            var method = $element.attr("ng-touchend");
+                            $scope.$event = event;
+                            $scope.$apply(method);
+                        }
+
+                    }]
+                }
+            });
+
+        myApp.controller("CanvasController", function ($scope) {
+            //console.log("OtherController");
+            $scope.isDrawing = false;
+            $scope.x = 0;
+            $scope.y = 0;
+            $scope.lastLine = null;
+
+            $scope.onClearButtonClick = function ($event) {
+                //console.log("onClearButtonClick");
+                var ctx = myCanvas.getContext("2d");
+                ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
+            }
+
+            $scope.onMouseDown = function ($event) {
+                //console.log("OnMouseDown");
+                $scope.isDrawing = true;
+            }
+
+            $scope.onTouchStart = function ($event) {
+                console.log("onTouchStart");
+                $scope.isDrawing = true;
+            }
+
+            $scope.onMouseUp = function ($event) {
+                //console.log("OnMouseUp");
+                $scope.isDrawing = false;
+                $scope.lastLine = null;
+            }
+
+            $scope.onMouseMove = function ($event) {
+                //console.log("onMouseMove");
+                var ctx = myCanvas.getContext("2d");
+                var clientRect = myCanvas.getBoundingClientRect();
+                var x = ($event.pageX - clientRect.left);
+                $scope.x = x;
+                var y = ($event.pageY - clientRect.top);
+                $scope.y = y;
+
+                if (!$scope.isDrawing) {
+                    return;
+                }
+
+                if ($scope.lastLine != null) {
+                    ctx.beginPath();
+                    ctx.moveTo($scope.lastLine[0], $scope.lastLine[1]);
+                    ctx.lineWidth = 5;
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+                }
+
+                $scope.lastLine = [x, y];
+            }
+
+            $scope.onTouchMove = function ($event) {
+                //console.log("onTouchMove");
+                $event.preventDefault();
+
+                var ctx = myCanvas.getContext("2d");
+                var clientRect = myCanvas.getBoundingClientRect();
+                var x = ($event.touches[0].pageX - clientRect.left);
+                $scope.x = x;
+                var y = ($event.touches[0].pageY - clientRect.top);
+                $scope.y = y;
+                if (!$scope.isDrawing) {
+                    return;
+                }
+
+                if ($scope.lastLine != null) {
+                    ctx.beginPath();
+                    ctx.moveTo($scope.lastLine[0], $scope.lastLine[1]);
+                    ctx.lineWidth = 5;
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+                }
+
+                $scope.lastLine = [x, y];
+            }
+
+            $scope.onMouseLeave = function ($event) {
+                //console.log("onMouseLeave");
+                $scope.isDrawing = false;
+                $scope.lastLine = null;
+            }
+
+            $scope.onTouchEnd = function ($event) {
+                console.log("onTouchEnd");
+                $scope.isDrawing = false;
+                $scope.lastLine = null;
+            }
+        });
+    </script>
+</head>
+<body ng-app="myApp">
+    <div ng-controller="CanvasController" style="font-family: 'arial'">
+        <canvas id="myCanvas"
+                style="border: solid;"
+                ng-init="myCanvas=this"
+                ng-mousedown="onMouseDown($event)"
+                ng-mousemove="onMouseMove($event)"
+                ng-mouseup="onMouseUp($event)"
+                ng-mouseleave="onMouseLeave($event)"
+                ng-touchstart="onTouchStart($event)"
+                ng-touchmove="onTouchMove($event)"
+                ng-touchend="onTouchEnd($event)"></canvas>
+
+        <button id="clearButton" ng-click="onClearButtonClick($event)">Clear</button>
+        <br />
+        <h1>{{ x }} {{y}}</h1>
+        <h3>Is Drawing: {{isDrawing}}  </h3>
+    </div>
+</body>
+</html>
